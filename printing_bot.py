@@ -16,41 +16,42 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 # Service Selection
 async def service_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data['service'] = update.message.text
-    valid_services = ['🎨 Color Printing', '🖤 Black & White', '📚 Binding', '📄 Paper Sheets']
-
-    if any(service in context.user_data['service'] for service in valid_services):
-        if context.user_data['service'] in ['🎨 Color Printing', '🖤 Black & White', '📚 Binding']:
-            await update.message.reply_text("Please upload your file.")
-            return FILE_OR_AMOUNT
-        elif context.user_data['service'] == '📄 Paper Sheets':
-            await update.message.reply_text("How many sheets do you need?")
-            return FILE_OR_AMOUNT
+    if context.user_data['service'] in ['🎨 Color Printing( 7 Birr/page)', '🖤 Black & White(3 Birr/page)', '📚 Binding(50 birr)']:
+        await update.message.reply_text("Please upload your file.")
+        return FILE_OR_AMOUNT
+    elif context.user_data['service'] == '📄 white Paper Sheets(2 Birr/sheet)':
+        await update.message.reply_text("How many sheets do you need?")
+        return FILE_OR_AMOUNT
     else:
         await update.message.reply_text("Invalid choice. Please start again with /start.")
         return ConversationHandler.END
 
 # File or Amount Input
 async def file_or_amount_received(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    if context.user_data['service'] == '📄 Paper Sheets':
+    if context.user_data['service'] == '📄 white Paper Sheets(2 Birr/sheet)':
         context.user_data['amount'] = update.message.text
         await update.message.reply_text("Thank you! Please send your name and phone number.")
     else:
-        # Handle file upload
-        if update.message.document:
-            context.user_data['file_id'] = update.message.document.file_id
-            await update.message.reply_text("File received! Now, please send your name and phone number.")
-            admin_chat_id = 443260225  # Replace with your Chat ID
-            await context.bot.send_document(chat_id=admin_chat_id, document=context.user_data['file_id'])
-            del context.user_data['file_id']  # Clear the file ID after sending to avoid resending it
-        else:
-            # If no file is uploaded, handle this scenario (just in case)
-            await update.message.reply_text("Please upload a file.")
+        # Store the file ID
+        context.user_data['file_id'] = update.message.document.file_id
+        
+        # Send confirmation to the user
+        await update.message.reply_text("File received! Now, please send your name and phone number.")
+        
+        # Send the file to the admin
+        admin_chat_id = 443260225  # Replace with your Chat ID
+        await context.bot.send_document(chat_id=admin_chat_id, document=context.user_data['file_id'])
+        
+        # Clear the file ID to avoid sending it again
+        del context.user_data['file_id']
+        
     return CONTACT
+
 
 # Contact Input
 async def contact_received(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data['contact'] = update.message.text
-    await update.message.reply_text("Any additional comment or consideration (e.g I want the first page to be color print)? If none, type 'No'.")
+    await update.message.reply_text("Any additional comment or consideration (e.g  want the first page to be color print)? If none, type 'No'.")
     return COMMENT
 
 # Comment Input and Final Confirmation
@@ -78,11 +79,12 @@ async def comment_received(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     # Send the order details to the admin
     await context.bot.send_message(chat_id=admin_chat_id, text=order_details)
 
-    # Send the file to the admin if available
+    # Send the file to the admin
     if 'file_id' in context.user_data:
         await context.bot.send_document(chat_id=admin_chat_id, document=context.user_data['file_id'])
 
     return ConversationHandler.END
+
 
 # Cancel Command
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
